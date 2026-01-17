@@ -437,10 +437,10 @@
             
             <!-- File Upload -->
             <div class="file-upload">
-                <label>📁 Load Network Data:</label>
+                <label>📁 Load Your Own Network:</label>
                 <input type="file" id="fileInput" accept=".json" />
                 <div style="margin-top: 8px; font-size: 12px; color: #718096;">
-                    Select your JSON network file
+                    Demo data loads automatically. Upload your own JSON to replace it.
                 </div>
             </div>
             
@@ -602,6 +602,34 @@
             minOrgGuests: 1,
             searchQuery: ''
         };
+        
+        // Auto-load sample data on page load
+        // window.addEventListener('DOMContentLoaded', function() {
+        //    loadNetworkFromURL('sample_network.json');
+        // });
+        <button onclick="loadNetworkFromURL('catalog_cocktails.json')">Catalog & Cocktails</button>
+        <button onclick="loadNetworkFromURL('another_podcast.json')">Another Podcast</button>
+        
+        // Function to load network from URL
+        function loadNetworkFromURL(url) {
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network file not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Store pristine copy (deep clone)
+                    pristineGraphData = JSON.parse(JSON.stringify(data));
+                    fullGraphData = data;
+                    initializeGraph();
+                })
+                .catch(error => {
+                    console.log('Auto-load failed (this is normal if file not present):', error);
+                    // Silent fail - user can still upload manually
+                });
+        }
         
         // File upload handler
         document.getElementById('fileInput').addEventListener('change', function(event) {
