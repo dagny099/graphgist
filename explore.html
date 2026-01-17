@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍸 GraphGarnish - Interactive Network Explorer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            max-width: 400px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        
+        #control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #control-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        #control-panel::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        #control-panel h1 {
+            font-size: 26px;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-weight: 700;
+        }
+        
+        #control-panel .subtitle {
+            font-size: 13px;
+            color: #718096;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        /* File Upload Section */
+        .file-upload {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 10px;
+            border: 2px dashed #667eea;
+        }
+        
+        .file-upload label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        
+        .file-upload input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        
+        /* Filter Section Headers */
+        .filter-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+        }
+        
+        .filter-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-section-title .icon {
+            font-size: 18px;
+        }
+        
+        /* Node Type Checkboxes */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(247, 250, 252, 0.8);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .checkbox-item:hover {
+            background: rgba(237, 242, 247, 1);
+            transform: translateX(2px);
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+        
+        .checkbox-item .color-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .checkbox-item label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 14px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        /* Year Range Slider */
+        .year-slider-container {
+            padding: 15px;
+            background: rgba(247, 250, 252, 0.8);
+            border-radius: 8px;
+        }
+        
+        .year-display {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .year-range-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .year-input-group {
+            flex: 1;
+        }
+        
+        .year-input-group label {
+            display: block;
+            font-size: 11px;
+            color: #718096;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .year-input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        /* Connection Count Slider */
+        .slider-container {
+            padding: 15px;
+            background: rgba(247, 250, 252, 0.8);
+            border-radius: 8px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+        
+        .slider-value {
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        /* Search Box */
+        .search-container {
+            padding: 15px;
+            background: rgba(247, 250, 252, 0.8);
+            border-radius: 8px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .search-help {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #718096;
+            line-height: 1.4;
+        }
+        
+        /* Reset Button */
+        .reset-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .reset-button:active {
+            transform: translateY(0);
+        }
+        
+        /* Stats Display */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 12px 8px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+            border-radius: 8px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        
+        /* Tooltip */
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.92);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
+            max-width: 320px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        
+        #tooltip .tooltip-title {
+            font-weight: 700;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+        
+        #tooltip .tooltip-meta {
+            font-size: 12px;
+            color: #cbd5e0;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        /* Graph Canvas */
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .node {
+            cursor: pointer;
+            transition: all 0.2s;
+            stroke: rgba(255,255,255,0.8);
+            stroke-width: 2px;
+        }
+        
+        .node:hover {
+            filter: brightness(1.4) drop-shadow(0 0 8px currentColor);
+            stroke-width: 3px;
+        }
+        
+        .node.selected {
+            stroke: #ffc107;
+            stroke-width: 4px;
+            filter: brightness(1.3) drop-shadow(0 0 12px #ffc107);
+        }
+        
+        .node.dimmed {
+            opacity: 0.2;
+        }
+        
+        .link {
+            stroke: rgba(255, 255, 255, 0.25);
+            stroke-width: 1.5px;
+            transition: all 0.3s;
+        }
+        
+        .link.highlighted {
+            stroke: rgba(255, 255, 255, 0.9);
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.6));
+        }
+        
+        .link.dimmed {
+            opacity: 0.1;
+        }
+        
+        .node-label {
+            font-size: 11px;
+            fill: white;
+            text-anchor: middle;
+            pointer-events: none;
+            font-weight: 600;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7);
+        }
+        
+        .node-label.dimmed {
+            opacity: 0.2;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="control-panel">
+            <h1>🍸 GraphGarnish</h1>
+            <div class="subtitle">Interactive Network Explorer with Filters</div>
+            
+            <!-- File Upload -->
+            <div class="file-upload">
+                <label>📁 Load Network Data:</label>
+                <input type="file" id="fileInput" accept=".json" />
+                <div style="margin-top: 8px; font-size: 12px; color: #718096;">
+                    Select your JSON network file
+                </div>
+            </div>
+            
+            <!-- Current Stats -->
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="visible-episodes">0</div>
+                    <div class="stat-label">Episodes</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="visible-guests">0</div>
+                    <div class="stat-label">Guests</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="visible-orgs">0</div>
+                    <div class="stat-label">Orgs</div>
+                </div>
+            </div>
+            
+            <!-- Filter: Node Types -->
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">👁️</span>
+                    <span>Show/Hide Node Types</span>
+                </div>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="show-episodes" checked>
+                        <div class="color-indicator" style="background: #ff6b6b;"></div>
+                        <label for="show-episodes">Episodes</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="show-guests" checked>
+                        <div class="color-indicator" style="background: #4ecdc4;"></div>
+                        <label for="show-guests">Guests</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="show-orgs" checked>
+                        <div class="color-indicator" style="background: #ffe66d;"></div>
+                        <label for="show-orgs">Organizations</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter: Year Range -->
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">🗓️</span>
+                    <span>Filter by Year</span>
+                </div>
+                <div class="year-slider-container">
+                    <div class="year-range-inputs">
+                        <div class="year-input-group">
+                            <label>From</label>
+                            <input type="number" id="year-start" min="2021" max="2026" value="2021">
+                        </div>
+                        <div class="year-input-group">
+                            <label>To</label>
+                            <input type="number" id="year-end" min="2021" max="2026" value="2026">
+                        </div>
+                    </div>
+                    <div style="font-size: 11px; color: #718096; margin-top: 5px;">
+                        Shows episodes published within this range
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter: Minimum Connections (Guests) -->
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">🔢</span>
+                    <span>Guest Appearances</span>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Minimum episodes per guest:</span>
+                        <span class="slider-value" id="min-guest-episodes-value">1</span>
+                    </div>
+                    <input type="range" id="min-guest-episodes" min="1" max="10" value="1" step="1">
+                    <div style="font-size: 11px; color: #718096; margin-top: 8px;">
+                        Filter to guests with at least this many episodes
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter: Minimum Connections (Orgs) -->
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">🏢</span>
+                    <span>Organization Size</span>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Minimum guests per org:</span>
+                        <span class="slider-value" id="min-org-guests-value">1</span>
+                    </div>
+                    <input type="range" id="min-org-guests" min="1" max="10" value="1" step="1">
+                    <div style="font-size: 11px; color: #718096; margin-top: 8px;">
+                        Filter to orgs with at least this many guests
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter: Search -->
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">🔍</span>
+                    <span>Search Network</span>
+                </div>
+                <div class="search-container">
+                    <input type="text" 
+                           id="search-input" 
+                           class="search-input" 
+                           placeholder="Search by name...">
+                    <div class="search-help">
+                        Type to filter nodes by name. Shows matching nodes and their connections.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter: Click Selection -->
+            <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">👆</span>
+                    <span>Click to Focus</span>
+                </div>
+                <div style="padding: 12px; background: rgba(255, 235, 59, 0.15); border-radius: 8px; border-left: 3px solid #ffc107;">
+                    <div style="font-size: 13px; color: #5a4a00; line-height: 1.5;">
+                        <strong>Click any node</strong> to focus on it and its connections. Click again to deselect.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reset Button -->
+            <button class="reset-button" id="reset-filters">
+                🔄 Reset All Filters
+            </button>
+        </div>
+        
+        <div id="tooltip"></div>
+        <svg id="graph"></svg>
+    </div>
+
+    <script>
+        // Global state
+        let fullGraphData = null;
+        let pristineGraphData = null; // Pristine copy never mutated by D3
+        let simulation = null;
+        let selectedNode = null;
+        
+        // Filter state
+        const filters = {
+            showEpisodes: true,
+            showGuests: true,
+            showOrgs: true,
+            yearStart: 2021,
+            yearEnd: 2026,
+            minGuestEpisodes: 1,
+            minOrgGuests: 1,
+            searchQuery: ''
+        };
+        
+        // File upload handler
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const rawData = JSON.parse(e.target.result);
+                        // Store pristine copy (deep clone)
+                        pristineGraphData = JSON.parse(JSON.stringify(rawData));
+                        fullGraphData = rawData;
+                        initializeGraph();
+                    } catch (error) {
+                        alert('Error parsing JSON file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        // Filter event listeners
+        document.getElementById('show-episodes').addEventListener('change', (e) => {
+            filters.showEpisodes = e.target.checked;
+            applyFilters();
+        });
+        
+        document.getElementById('show-guests').addEventListener('change', (e) => {
+            filters.showGuests = e.target.checked;
+            applyFilters();
+        });
+        
+        document.getElementById('show-orgs').addEventListener('change', (e) => {
+            filters.showOrgs = e.target.checked;
+            applyFilters();
+        });
+        
+        document.getElementById('year-start').addEventListener('input', (e) => {
+            filters.yearStart = parseInt(e.target.value);
+            // Ensure start <= end
+            if (filters.yearStart > filters.yearEnd) {
+                filters.yearEnd = filters.yearStart;
+                document.getElementById('year-end').value = filters.yearEnd;
+            }
+            applyFilters();
+        });
+        
+        document.getElementById('year-end').addEventListener('input', (e) => {
+            filters.yearEnd = parseInt(e.target.value);
+            // Ensure end >= start
+            if (filters.yearEnd < filters.yearStart) {
+                filters.yearStart = filters.yearEnd;
+                document.getElementById('year-start').value = filters.yearStart;
+            }
+            applyFilters();
+        });
+        
+        document.getElementById('min-guest-episodes').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            filters.minGuestEpisodes = value;
+            document.getElementById('min-guest-episodes-value').textContent = value;
+            applyFilters();
+        });
+        
+        document.getElementById('min-org-guests').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            filters.minOrgGuests = value;
+            document.getElementById('min-org-guests-value').textContent = value;
+            applyFilters();
+        });
+        
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            filters.searchQuery = e.target.value.toLowerCase().trim();
+            applyFilters();
+        });
+        
+        document.getElementById('reset-filters').addEventListener('click', () => {
+            // Reset all filters to defaults
+            filters.showEpisodes = true;
+            filters.showGuests = true;
+            filters.showOrgs = true;
+            filters.yearStart = 2021;
+            filters.yearEnd = 2026;
+            filters.minGuestEpisodes = 1;
+            filters.minOrgGuests = 1;
+            filters.searchQuery = '';
+            selectedNode = null;
+            
+            // Reset UI controls
+            document.getElementById('show-episodes').checked = true;
+            document.getElementById('show-guests').checked = true;
+            document.getElementById('show-orgs').checked = true;
+            document.getElementById('year-start').value = 2021;
+            document.getElementById('year-end').value = 2026;
+            document.getElementById('min-guest-episodes').value = 1;
+            document.getElementById('min-org-guests').value = 1;
+            document.getElementById('search-input').value = '';
+            document.getElementById('min-guest-episodes-value').textContent = '1';
+            document.getElementById('min-org-guests-value').textContent = '1';
+            
+            applyFilters();
+        });
+        
+        function initializeGraph() {
+            if (!fullGraphData) return;
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            if (!pristineGraphData) return;
+            
+            // Use pristine data (never mutated by D3)
+            const sourceData = pristineGraphData;
+            
+            // STEP 1: Calculate connection counts from FULL dataset
+            const guestEpisodeCounts = {};
+            const orgGuestCounts = {};
+            
+            sourceData.links.forEach(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                
+                if (link.type === 'GUEST_ON') {
+                    guestEpisodeCounts[sourceId] = (guestEpisodeCounts[sourceId] || 0) + 1;
+                }
+                if (link.type === 'AFFILIATED_WITH') {
+                    orgGuestCounts[targetId] = (orgGuestCounts[targetId] || 0) + 1;
+                }
+            });
+            
+            // STEP 2: Filter episodes first (by type, year, search)
+            const filteredEpisodes = sourceData.nodes.filter(node => {
+                if (node.type !== 'episode') return false;
+                
+                // Type visibility
+                if (!filters.showEpisodes) return false;
+                
+                // Year filter
+                if (node.date) {
+                    const year = parseInt(node.date.substring(0, 4));
+                    if (year < filters.yearStart || year > filters.yearEnd) return false;
+                }
+                
+                // Search filter
+                if (filters.searchQuery && !node.name.toLowerCase().includes(filters.searchQuery)) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            const filteredEpisodeIds = new Set(filteredEpisodes.map(e => e.id));
+            
+            // STEP 3: Find guests connected to filtered episodes
+            const connectedGuestIds = new Set();
+            sourceData.links.forEach(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                
+                if (link.type === 'GUEST_ON' && filteredEpisodeIds.has(targetId)) {
+                    connectedGuestIds.add(sourceId);
+                }
+            });
+            
+            // STEP 4: Filter guests (by type, connection count, search)
+            const filteredGuests = sourceData.nodes.filter(node => {
+                if (node.type !== 'person') return false;
+                
+                // Type visibility
+                if (!filters.showGuests) return false;
+                
+                // Must be connected to at least one visible episode
+                if (!connectedGuestIds.has(node.id)) return false;
+                
+                // Connection count filter (use FULL dataset counts)
+                const episodeCount = guestEpisodeCounts[node.id] || 0;
+                if (episodeCount < filters.minGuestEpisodes) return false;
+                
+                // Search filter
+                if (filters.searchQuery && !node.name.toLowerCase().includes(filters.searchQuery)) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            const filteredGuestIds = new Set(filteredGuests.map(g => g.id));
+            
+            // STEP 5: Find orgs connected to filtered guests
+            const connectedOrgIds = new Set();
+            sourceData.links.forEach(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                
+                if (link.type === 'AFFILIATED_WITH' && filteredGuestIds.has(sourceId)) {
+                    connectedOrgIds.add(targetId);
+                }
+            });
+            
+            // STEP 6: Filter organizations (by type, connection count, search)
+            const filteredOrgs = sourceData.nodes.filter(node => {
+                if (node.type !== 'organization') return false;
+                
+                // Type visibility
+                if (!filters.showOrgs) return false;
+                
+                // Must be connected to at least one visible guest
+                if (!connectedOrgIds.has(node.id)) return false;
+                
+                // Connection count filter (use FULL dataset counts)
+                const guestCount = orgGuestCounts[node.id] || 0;
+                if (guestCount < filters.minOrgGuests) return false;
+                
+                // Search filter
+                if (filters.searchQuery && !node.name.toLowerCase().includes(filters.searchQuery)) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            // STEP 7: Combine all filtered nodes
+            const filteredNodes = [...filteredEpisodes, ...filteredGuests, ...filteredOrgs];
+            const filteredNodeIds = new Set(filteredNodes.map(n => n.id));
+            
+            // STEP 8: Filter links - IMPORTANT: create fresh copies with string IDs
+            const filteredLinks = sourceData.links
+                .filter(link => {
+                    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                    return filteredNodeIds.has(sourceId) && filteredNodeIds.has(targetId);
+                })
+                .map(link => ({
+                    // Create fresh link objects with string IDs (D3 will convert to object refs)
+                    source: typeof link.source === 'object' ? link.source.id : link.source,
+                    target: typeof link.target === 'object' ? link.target.id : link.target,
+                    type: link.type
+                }));
+            
+            // STEP 9: Update stats
+            document.getElementById('visible-episodes').textContent = filteredEpisodes.length;
+            document.getElementById('visible-guests').textContent = filteredGuests.length;
+            document.getElementById('visible-orgs').textContent = filteredOrgs.length;
+            
+            // DEBUG: Log what we're rendering
+            console.log('Filter applied:', {
+                episodes: filteredEpisodes.length,
+                guests: filteredGuests.length,
+                orgs: filteredOrgs.length,
+                links: filteredLinks.length,
+                filters: filters
+            });
+            
+            // STEP 10: Create FRESH copies of nodes (to avoid D3 mutating original data)
+            const freshNodes = filteredNodes.map(n => ({...n}));
+            
+            // STEP 11: Render graph
+            createGraph({ nodes: freshNodes, links: filteredLinks });
+        }
+        
+        function createGraph(graphData) {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            // Clear existing graph
+            d3.select('#graph').selectAll('*').remove();
+            
+            const svg = d3.select('#graph');
+            const g = svg.append('g');
+            
+            // Add zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 4])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                });
+            
+            svg.call(zoom);
+            
+            // Initial zoom
+            setTimeout(() => {
+                svg.call(zoom.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.5));
+            }, 100);
+            
+            // Color & size maps
+            const colorMap = {
+                'episode': '#ff6b6b',
+                'person': '#4ecdc4',
+                'organization': '#ffe66d'
+            };
+            
+            const sizeMap = {
+                'episode': 7,
+                'person': 11,
+                'organization': 15
+            };
+            
+            // Force simulation
+            simulation = d3.forceSimulation(graphData.nodes)
+                .force('link', d3.forceLink(graphData.links)
+                    .id(d => d.id)
+                    .distance(d => d.type === 'AFFILIATED_WITH' ? 60 : 100))
+                .force('charge', d3.forceManyBody()
+                    .strength(d => {
+                        if (d.type === 'organization') return -1200;
+                        if (d.type === 'person') return -500;
+                        return -200;
+                    }))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => sizeMap[d.type] + 8))
+                .force('x', d3.forceX(width / 2).strength(0.05))
+                .force('y', d3.forceY(height / 2).strength(0.05));
+            
+            // Links
+            const link = g.append('g')
+                .selectAll('line')
+                .data(graphData.links)
+                .join('line')
+                .attr('class', 'link');
+            
+            // Nodes
+            const node = g.append('g')
+                .selectAll('circle')
+                .data(graphData.nodes)
+                .join('circle')
+                .attr('class', 'node')
+                .attr('r', d => sizeMap[d.type])
+                .attr('fill', d => colorMap[d.type])
+                .on('click', handleNodeClick)
+                .call(drag(simulation));
+            
+            // Labels
+            const label = g.append('g')
+                .selectAll('text')
+                .data(graphData.nodes.filter(d => d.type !== 'episode'))
+                .join('text')
+                .attr('class', 'node-label')
+                .text(d => d.name.length > 25 ? d.name.substring(0, 22) + '...' : d.name)
+                .attr('dy', d => sizeMap[d.type] + 18);
+            
+            // Tooltip
+            const tooltip = d3.select('#tooltip');
+            
+            node.on('mouseenter', function(event, d) {
+                tooltip.style('opacity', 1);
+                
+                let content = `<div class="tooltip-title">${d.name}</div>`;
+                
+                if (d.type === 'episode' && d.date) {
+                    content += `<div class="tooltip-meta">📅 ${d.date}</div>`;
+                }
+                
+                if (d.type === 'person') {
+                    const episodes = graphData.links.filter(l => 
+                        l.source.id === d.id && l.type === 'GUEST_ON'
+                    ).length;
+                    const orgs = new Set(graphData.links.filter(l => 
+                        l.source.id === d.id && l.type === 'AFFILIATED_WITH'
+                    ).map(l => l.target.name || l.target.id)).size;
+                    
+                    content += `<div class="tooltip-meta">👤 Guest on ${episodes} episode${episodes !== 1 ? 's' : ''}`;
+                    if (orgs > 0) content += `<br/>🏢 Affiliated with ${orgs} org${orgs !== 1 ? 's' : ''}`;
+                    content += `</div>`;
+                }
+                
+                if (d.type === 'organization') {
+                    const people = new Set(graphData.links.filter(l => 
+                        l.target.id === d.id && l.type === 'AFFILIATED_WITH'
+                    ).map(l => l.source.id)).size;
+                    content += `<div class="tooltip-meta">🏢 ${people} guest${people !== 1 ? 's' : ''} affiliated</div>`;
+                }
+                
+                tooltip.html(content)
+                    .style('left', (event.pageX + 15) + 'px')
+                    .style('top', (event.pageY - 15) + 'px');
+            })
+            .on('mouseleave', function() {
+                tooltip.style('opacity', 0);
+            });
+            
+            // Animation tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+                
+                label
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+            
+            function handleNodeClick(event, clickedNode) {
+                event.stopPropagation();
+                
+                // Toggle selection
+                if (selectedNode === clickedNode) {
+                    selectedNode = null;
+                    // Remove all selection styling
+                    node.classed('selected', false).classed('dimmed', false);
+                    link.classed('highlighted', false).classed('dimmed', false);
+                    label.classed('dimmed', false);
+                } else {
+                    selectedNode = clickedNode;
+                    
+                    // Find connected node IDs
+                    const connectedIds = new Set([clickedNode.id]);
+                    graphData.links.forEach(l => {
+                        if (l.source.id === clickedNode.id) connectedIds.add(l.target.id);
+                        if (l.target.id === clickedNode.id) connectedIds.add(l.source.id);
+                    });
+                    
+                    // Apply selection styling
+                    node
+                        .classed('selected', d => d.id === clickedNode.id)
+                        .classed('dimmed', d => !connectedIds.has(d.id));
+                    
+                    link
+                        .classed('highlighted', l => 
+                            l.source.id === clickedNode.id || l.target.id === clickedNode.id)
+                        .classed('dimmed', l => 
+                            l.source.id !== clickedNode.id && l.target.id !== clickedNode.id);
+                    
+                    label
+                        .classed('dimmed', d => !connectedIds.has(d.id));
+                }
+            }
+            
+            // Click on background to deselect
+            svg.on('click', function(event) {
+                if (event.target === this) {
+                    selectedNode = null;
+                    node.classed('selected', false).classed('dimmed', false);
+                    link.classed('highlighted', false).classed('dimmed', false);
+                    label.classed('dimmed', false);
+                }
+            });
+            
+            function drag(simulation) {
+                function dragstarted(event) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    event.subject.fx = event.subject.x;
+                    event.subject.fy = event.subject.y;
+                }
+                
+                function dragged(event) {
+                    event.subject.fx = event.x;
+                    event.subject.fy = event.y;
+                }
+                
+                function dragended(event) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    event.subject.fx = null;
+                    event.subject.fy = null;
+                }
+                
+                return d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended);
+            }
+        }
+    </script>
+</body>
+</html>

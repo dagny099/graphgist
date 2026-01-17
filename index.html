@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="GraphGarnish - Transform podcast metadata into interactive network visualizations. Explore 203 episodes of Catalog & Cocktails as a living knowledge graph.">
+    <meta name="keywords" content="network visualization, podcast analytics, knowledge graph, data visualization, D3.js">
+    <meta name="author" content="Dagny Taggart">
+    <title>🍸 GraphGarnish - Interactive Network Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-links a {
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        
+        /* Hero Section */
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .hero .subtitle {
+            font-size: 24px;
+            margin-bottom: 15px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        
+        .hero .tagline {
+            font-size: 18px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Demo Preview */
+        .demo-preview {
+            background: white;
+            padding: 60px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: #718096;
+            margin-bottom: 50px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .demo-frame {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 600px;
+        }
+        
+        .demo-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* Features Section */
+        .features {
+            background: #f7fafc;
+            padding: 80px 20px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 50px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        
+        .feature-card h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+        
+        .feature-card p {
+            color: #718096;
+            line-height: 1.7;
+        }
+        
+        /* Use Cases */
+        .use-cases {
+            background: white;
+            padding: 80px 20px;
+        }
+        
+        .use-case-list {
+            max-width: 800px;
+            margin: 50px auto 0;
+        }
+        
+        .use-case {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+        }
+        
+        .use-case h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        
+        .use-case p {
+            color: #4a5568;
+            line-height: 1.7;
+        }
+        
+        /* How It Works */
+        .how-it-works {
+            background: #f7fafc;
+            padding: 80px 20px;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .step {
+            text-align: center;
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 auto 20px;
+        }
+        
+        .step h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        
+        .step p {
+            color: #718096;
+            line-height: 1.6;
+        }
+        
+        /* Tech Stack */
+        .tech-stack {
+            background: white;
+            padding: 80px 20px;
+        }
+        
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        
+        .tech-tag {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 80px 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .cta-section h2 {
+            font-size: 42px;
+            margin-bottom: 20px;
+        }
+        
+        .cta-section p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+        
+        /* Footer */
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-links a {
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        .footer-credit {
+            color: #a0aec0;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        
+        .footer-credit a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .footer-credit a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 38px;
+            }
+            
+            .hero .subtitle {
+                font-size: 20px;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .section-title {
+                font-size: 28px;
+            }
+            
+            .demo-frame {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">🍸 GraphGarnish</div>
+            <nav class="nav-links">
+                <a href="#demo">Demo</a>
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="https://github.com/dagny099/graphgarnish" target="_blank">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>🍸 GraphGarnish</h1>
+        <p class="subtitle">Transform podcast metadata into interactive network visualizations</p>
+        <p class="tagline">
+            Explore 203 episodes of Catalog & Cocktails as a living knowledge graph. 
+            See who's talking, which organizations dominate, and how the conversation evolved over five years.
+        </p>
+        <div class="cta-buttons">
+            <a href="explore.html" class="btn btn-primary">Explore the Network →</a>
+            <a href="#how-it-works" class="btn btn-secondary">How It Works</a>
+        </div>
+    </section>
+
+    <!-- Demo Preview -->
+    <section id="demo" class="demo-preview">
+        <div class="container">
+            <h2 class="section-title">See It In Action</h2>
+            <p class="section-subtitle">
+                This is 203 episodes of the Catalog & Cocktails podcast. Every red dot is an episode. 
+                Every cyan dot is a guest. Every yellow dot is an organization. All connected.
+            </p>
+            <div class="demo-frame">
+                <iframe src="explore.html" title="GraphGarnish Interactive Demo"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why GraphGarnish?</h2>
+            <p class="section-subtitle">
+                Because metadata tells a story that spreadsheets hide
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎛️</div>
+                    <h3>Smart Filtering</h3>
+                    <p>Filter by year, connection count, or node type. Search for specific people or organizations. All filters work together seamlessly.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">👆</div>
+                    <h3>Click to Focus</h3>
+                    <p>Select any guest or organization to instantly see their network. Highlight connections, dim the rest. Navigate naturally.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Search Everything</h3>
+                    <p>Find everyone from "Netflix" or track down that guest whose name you half-remember. Real-time search across the entire network.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Real-Time Stats</h3>
+                    <p>See exactly how many episodes, guests, and organizations are visible as you filter. Track the network's shape as you explore.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Beautiful Physics</h3>
+                    <p>D3.js force-directed layout creates natural clustering. Organizations become gravity wells. Guests orbit around them. It just works.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📁</div>
+                    <h3>Bring Your Own Data</h3>
+                    <p>Upload any network JSON. Works with your podcast, your conference, your community. The tool adapts to your data.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section class="use-cases">
+        <div class="container">
+            <h2 class="section-title">What Can You Learn?</h2>
+            <p class="section-subtitle">Patterns that emerge when you see the whole network</p>
+            
+            <div class="use-case-list">
+                <div class="use-case">
+                    <h3>🔁 Who Returns?</h3>
+                    <p>32% of guests come back for multiple episodes. They're not just sources—they're part of the ongoing conversation. Filter to guests with 2+ appearances to see the core community.</p>
+                </div>
+                
+                <div class="use-case">
+                    <h3>🏢 Organizational Gravity</h3>
+                    <p>Some companies shape the discourse. data.world, Databricks, Netflix—they're not just represented, they're central nodes. See which organizations have the most affiliated guests.</p>
+                </div>
+                
+                <div class="use-case">
+                    <h3>📈 Growth Patterns</h3>
+                    <p>Filter to 2024 only: 56 episodes. The conversation accelerated. You can see it in the density. Compare year-over-year to track evolution.</p>
+                </div>
+                
+                <div class="use-case">
+                    <h3>🔗 Hidden Connections</h3>
+                    <p>Click on a guest to see their organizational affiliations and all their episodes. Discover connections you didn't know existed.</p>
+                </div>
+                
+                <div class="use-case">
+                    <h3>🎯 Gap Analysis</h3>
+                    <p>One-time guests vs. repeat guests. Organizations with single representatives vs. those with many. See where you might be missing perspectives.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">From spreadsheet to network in three steps</p>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Prepare Your Data</h3>
+                    <p>Episode metadata in a spreadsheet: title, date, guest name, organization. We provide a template and sample data.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Generate Network JSON</h3>
+                    <p>Use our Python script to transform your spreadsheet into a network graph. Automatically extracts guests, organizations, and relationships.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Upload & Explore</h3>
+                    <p>Load your JSON into GraphGarnish. Filter, search, click to focus. See patterns you never knew existed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="tech-stack">
+        <div class="container">
+            <h2 class="section-title">Built With</h2>
+            <p class="section-subtitle">Modern web tech, deliberately simple</p>
+            
+            <div class="tech-tags">
+                <span class="tech-tag">D3.js v7</span>
+                <span class="tech-tag">Vanilla JavaScript</span>
+                <span class="tech-tag">Force-Directed Layout</span>
+                <span class="tech-tag">No Backend Required</span>
+                <span class="tech-tag">JSON Data Format</span>
+                <span class="tech-tag">Responsive Design</span>
+                <span class="tech-tag">Open Source</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Visualize Your Network?</h2>
+            <p>Explore the demo or create your own network visualization</p>
+            <div class="cta-buttons">
+                <a href="explore.html" class="btn btn-primary">Explore Demo Network →</a>
+                <a href="https://github.com/dagny099/graphgarnish" class="btn btn-secondary" target="_blank">View on GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="https://github.com/dagny099/graphgarnish" target="_blank">GitHub</a>
+                <a href="https://github.com/dagny099/graphgarnish/blob/main/README.md" target="_blank">Documentation</a>
+                <a href="https://github.com/dagny099/graphgarnish/issues" target="_blank">Report Issue</a>
+            </div>
+            <div class="footer-credit">
+                Built with curiosity and coffee by <a href="https://yourwebsite.com" target="_blank">Dagny Taggart</a>
+                <br>
+                Open source • MIT License • 2026
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
