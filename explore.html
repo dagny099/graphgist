@@ -81,7 +81,8 @@
         #status-indicator {
             position: absolute;
             top: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
             padding: 15px 25px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
@@ -95,12 +96,11 @@
             font-weight: 600;
             transition: all 0.3s ease;
             opacity: 0;
-            transform: translateY(-10px);
         }
         
         #status-indicator.show {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
         }
         
         #status-indicator.loading {
@@ -171,10 +171,12 @@
         }
         
         /* Layout Toggle Button */
+        /* Layout Toggle Button */
         #layout-toggle {
             position: absolute;
-            top: 90px;
-            left: 20px;
+            top: 20px;
+            left: 50%;
+            transform: translateX(320px);
             background: rgba(255, 255, 255, 0.95);
             border: none;
             border-radius: 12px;
@@ -186,19 +188,15 @@
             color: #4a5568;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
-            z-index: 99;
+            z-index: 101;
             display: flex;
             align-items: center;
             gap: 8px;
         }
         
         #layout-toggle:hover {
-            transform: scale(1.05);
+            transform: translateX(320px) scale(1.05);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-        }
-        
-        #layout-toggle.panel-open {
-            left: 440px;
         }
         
         #control-panel::-webkit-scrollbar {
@@ -265,7 +263,7 @@
             font-size: 14px;
             font-weight: 700;
             color: #2d3748;
-            margin-bottom: 15px;
+            padding-top: 12px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -277,6 +275,7 @@
         
         /* Node Type Checkboxes */
         .checkbox-group {
+            padding: 5px 0 5px 0;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -448,7 +447,7 @@
         .reset-button {
             width: 100%;
             padding: 12px;
-            margin-top: 20px;
+            margin: 15px 0 15px 0;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
@@ -593,7 +592,8 @@
 <body>
     <div id="container">
         <!-- Title Banner -->
-        <div id="title-banner">
+        <!-- Title Banner (hidden until data loads) -->
+        <div id="title-banner" class="hidden">
             <h2 id="network-title">Catalog & Cocktails</h2>
             <div class="subtitle" id="network-subtitle">203 Episodes • 2021-2026</div>
         </div>
@@ -615,18 +615,17 @@
             <span class="status-text">Loading...</span>
         </div>
         
+        <!-- Load Data Button (shown when no data) -->
+        <button id="load-data-pointer" onclick="scrollToSidebarSection('data-file-upload')" 
+                style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+                       padding: 10px 20px; background: white; border: none; border-radius: 8px; 
+                       cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 101; display: none;">
+            👈🏾 Load data in Sidebar
+        </button>
+        
         <div id="control-panel">
             <h1>🍸 GraphGarnish</h1>
             <div class="subtitle">Interactive Network Explorer • Press <strong>H</strong> to hide/show</div>
-            
-            <!-- File Upload -->
-            <div class="file-upload">
-                <label>📁 Load Your Own Network:</label>
-                <input type="file" id="fileInput" accept=".json" />
-                <div style="margin-top: 8px; font-size: 12px; color: #718096;">
-                    Demo data loads automatically. Upload your own JSON to replace it.
-                </div>
-            </div>
             
             <!-- Current Stats -->
             <div class="stats">
@@ -643,9 +642,80 @@
                     <div class="stat-label">Orgs</div>
                 </div>
             </div>
+            <div style="padding: 12px; background: rgba(255, 235, 59, 0.15); border-radius: 8px; border-left: 3px solid #ffc107;">
+                <div style="font-size: 13px; color: #5a4a00; line-height: 1.5;">
+                    <strong>Click any node</strong> to focus on it and its connections. Click again to deselect.
+                </div>
+            </div>
             
-            <!-- Filter: Node Types -->
+            <!-- Filter: Click Selection 
             <div class="filter-section">
+                <div class="filter-section-title">
+                    <span class="icon">👆</span>
+                    <span>Click to Focus</span>
+                </div>
+            </div> -->
+
+            <div class="filter-section">
+    
+                <!-- Reset Button -->
+                <button class="reset-button" id="reset-filters" style="margin-top: 0px;">
+                    🔄 Reset All Filters
+                </button>
+    
+                <!-- Filter: Year Range -->
+                <div class="filter-section-title">
+                    <span class="icon">🗓️</span>
+                    <span>Filter by Year</span>
+                </div>
+                <div class="year-slider-container">
+                    <div class="year-range-inputs">
+                        <div class="year-input-group">
+                            <label>From</label>
+                            <input type="number" id="year-start" min="2021" max="2026" value="2021">
+                        </div>
+                        <div class="year-input-group">
+                            <label>To</label>
+                            <input type="number" id="year-end" min="2021" max="2026" value="2026">
+                        </div>
+                    </div>
+                    <div style="font-size: 11px; color: #718096; margin-top: 5px;">
+                        Shows episodes published within this range
+                    </div>
+                </div>
+            
+                <!-- Filter: Search -->
+                <div class="filter-section-title">
+                    <span class="icon">🔍</span>
+                    <span>Search Network</span>
+                </div>
+                <div class="search-container">
+                    <input type="text" 
+                        id="search-input" 
+                        class="search-input" 
+                        placeholder="Search by name...">
+                    <div class="search-help">
+                        Type to filter nodes by name. Shows matching nodes and their connections.
+                    </div>
+                </div>
+                 
+                <!-- Filter: Minimum Connections (Guests) -->
+                <div class="filter-section-title">
+                    <span class="icon">🔢</span>
+                    <span>Guest Appearances</span>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Minimum episodes per guest:</span>
+                        <span class="slider-value" id="min-guest-episodes-value">1</span>
+                    </div>
+                    <input type="range" id="min-guest-episodes" min="1" max="10" value="1" step="1">
+                    <div style="font-size: 11px; color: #718096; margin-top: 8px;">
+                        Filter to guests with at least this many episodes
+                    </div>
+                </div>
+
+                <!-- Filter: Node Types -->
                 <div class="filter-section-title">
                     <span class="icon">👁️</span>
                     <span>Show/Hide Node Types</span>
@@ -669,48 +739,7 @@
                 </div>
             </div>
             
-            <!-- Filter: Year Range -->
-            <div class="filter-section">
-                <div class="filter-section-title">
-                    <span class="icon">🗓️</span>
-                    <span>Filter by Year</span>
-                </div>
-                <div class="year-slider-container">
-                    <div class="year-range-inputs">
-                        <div class="year-input-group">
-                            <label>From</label>
-                            <input type="number" id="year-start" min="2021" max="2026" value="2021">
-                        </div>
-                        <div class="year-input-group">
-                            <label>To</label>
-                            <input type="number" id="year-end" min="2021" max="2026" value="2026">
-                        </div>
-                    </div>
-                    <div style="font-size: 11px; color: #718096; margin-top: 5px;">
-                        Shows episodes published within this range
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Filter: Minimum Connections (Guests) -->
-            <div class="filter-section">
-                <div class="filter-section-title">
-                    <span class="icon">🔢</span>
-                    <span>Guest Appearances</span>
-                </div>
-                <div class="slider-container">
-                    <div class="slider-label">
-                        <span>Minimum episodes per guest:</span>
-                        <span class="slider-value" id="min-guest-episodes-value">1</span>
-                    </div>
-                    <input type="range" id="min-guest-episodes" min="1" max="10" value="1" step="1">
-                    <div style="font-size: 11px; color: #718096; margin-top: 8px;">
-                        Filter to guests with at least this many episodes
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Filter: Minimum Connections (Orgs) -->
+            <!-- Filter: Minimum Connections (Orgs) 
             <div class="filter-section">
                 <div class="filter-section-title">
                     <span class="icon">🏢</span>
@@ -726,42 +755,18 @@
                         Filter to orgs with at least this many guests
                     </div>
                 </div>
-            </div>
+            </div> -->
             
-            <!-- Filter: Search -->
             <div class="filter-section">
-                <div class="filter-section-title">
-                    <span class="icon">🔍</span>
-                    <span>Search Network</span>
-                </div>
-                <div class="search-container">
-                    <input type="text" 
-                           id="search-input" 
-                           class="search-input" 
-                           placeholder="Search by name...">
-                    <div class="search-help">
-                        Type to filter nodes by name. Shows matching nodes and their connections.
+                <!-- File Upload -->
+                <div class="file-upload" id="data-file-upload">
+                    <label>📁 Load Your Own Network:</label>
+                    <input type="file" id="fileInput" accept=".json" />
+                    <div style="margin-top: 8px; font-size: 12px; color: #718096;">
+                        Demo data loads automatically. Upload your own JSON to replace it.
                     </div>
                 </div>
             </div>
-            
-            <!-- Filter: Click Selection -->
-            <div class="filter-section">
-                <div class="filter-section-title">
-                    <span class="icon">👆</span>
-                    <span>Click to Focus</span>
-                </div>
-                <div style="padding: 12px; background: rgba(255, 235, 59, 0.15); border-radius: 8px; border-left: 3px solid #ffc107;">
-                    <div style="font-size: 13px; color: #5a4a00; line-height: 1.5;">
-                        <strong>Click any node</strong> to focus on it and its connections. Click again to deselect.
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Reset Button -->
-            <button class="reset-button" id="reset-filters">
-                🔄 Reset All Filters
-            </button>
         </div>
         
         <div id="tooltip"></div>
@@ -788,11 +793,29 @@
             searchQuery: ''
         };
         
+        function scrollToSidebarSection(sectionId) {
+            // Open sidebar if collapsed
+            const panel = document.getElementById('control-panel');
+            if (panel.classList.contains('collapsed')) {
+                togglePanel(); // Opens the sidebar
+            }
+            
+            // Wait for animation, then scroll to section
+            setTimeout(() => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 300); // Wait for sidebar animation
+        }    
+
         // Status indicator helper functions
         function showStatus(type, icon, text, duration = 3000) {
             const indicator = document.getElementById('status-indicator');
             const iconEl = indicator.querySelector('.status-icon');
             const textEl = indicator.querySelector('.status-text');
+            const titleBanner = document.getElementById('title-banner');
+            const loadButton = document.getElementById('load-data-pointer');
             
             // Remove all status classes
             indicator.classList.remove('loading', 'success', 'error');
@@ -800,13 +823,19 @@
             // Add new status class
             indicator.classList.add(type);
             iconEl.textContent = icon;
-            textEl.textContent = text;
+            textEl.innerHTML = text;  // Changed to innerHTML to support links
             
             // Show indicator
             indicator.classList.add('show');
             
-            // Auto-hide after duration (unless loading)
-            if (type !== 'loading' && duration > 0) {
+            // Hide title banner and show button when showing error (no data)
+            if (type === 'error') {
+                titleBanner.classList.add('hidden');
+                if (loadButton) loadButton.style.display = 'block';
+            }
+            
+            // Auto-hide after duration (unless loading or duration is 0)
+            if (duration > 0 && type !== 'loading') {
                 setTimeout(() => {
                     indicator.classList.remove('show');
                 }, duration);
@@ -838,7 +867,7 @@
             }
             
             // Update layout toggle position too
-            updateLayoutTogglePosition();
+            //updateLayoutTogglePosition();
         }
         
         // Keyboard shortcut: Press 'H' to toggle panel
@@ -885,6 +914,18 @@
         
         // Update title banner with network info
         function updateTitle(data) {
+            const titleBanner = document.getElementById('title-banner');
+            const loadButton = document.getElementById('load-data-pointer');
+            
+            // Show title banner now that data is loaded
+            titleBanner.classList.remove('hidden');
+            
+            // Hide status and button
+            hideStatus();
+            if (loadButton) {
+                loadButton.style.display = 'none';
+            }
+            
             const episodes = data.nodes.filter(n => n.type === 'episode');
             const guests = data.nodes.filter(n => n.type === 'person');
             
@@ -933,7 +974,13 @@
                 })
                 .catch(error => {
                     console.log('Auto-load failed (this is normal if file not present):', error);
-                    showStatus('error', '⚠️', 'No data loaded. Upload a JSON file to begin.', 5000);
+                    const loadButton = document.getElementById('load-data-pointer');
+                    if (loadButton) {
+                        loadButton.style.display = 'block';
+                    }
+                    showStatus('error', '⚠️', 
+                        'No data loaded. <a href="#" onclick="scrollToSidebarSection(\'data-file-upload\'); return false;" style="color: white; text-decoration: underline; font-weight: 700;">Upload a file</a> to begin.', 
+                        0);  // duration 0 = stay visible
                     // Silent fail - user can still upload manually
                 });
         }
